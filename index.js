@@ -23,18 +23,16 @@ function increment(ip) {
 const ipStart = '100.87.0.1';
 const ipEnd = '100.87.0.3';
 const ports = [22, 23, 80, 443];
+(function(ipStart, ipEnd) {
+  let promises = [];
+  for (let ip = ipStart; ip !== ipEnd; ip = increment(ip))
+    promises.push(ping(ip));
 
-let ip = ipStart;
-let promises = [];
-while(ip !== ipEnd) { // todo: fix prone to overflow if ipEnd supplied with invalid ip address
-  promises.push(ping(ip));
-  ip = increment(ip);
-};
-
-Promise.allSettled(promises)
-  .then((results) => {
-    results.forEach((result) => {
-      console.log(result)
-      // todo: spawn worker threads for every cpu core to scan tcp/udp ports of reachable host
-    })
-  });
+  Promise.allSettled(promises)
+    .then((results) => {
+      results.forEach((result) => {
+        console.log(result); // todo: only stdout ping results with exit_code 0, i.e. resolved promises
+        // todo: spawn worker threads for every cpu core to scan tcp/udp ports of reachable host
+      });
+    });
+}) (ipStart, ipEnd);
