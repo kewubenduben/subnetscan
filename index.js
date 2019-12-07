@@ -4,14 +4,14 @@ const { promisify } = require('util'),
 
 // todo?: up the timeout for high latency but reachable hosts
 // ping arg flags os dependent
-async function ping(argArray, ip) {
-  let { error, stdout, stderr } = await exec(`${pingArgs.join(' ')} ${ip}`);
-  return (stdout ? [ip, stdout] : [error, stderr]);
+async function ping(_pingArgs, _ip) {
+  let { error, stdout, stderr } = await exec(`${_pingArgs.join(' ')} ${_ip}`);
+  return (stdout ? [_ip, stdout] : [error, stderr]);
 };
 
 // 255.255.255.255 increments to 0.0.0.0
-function increment(ip) {
-  let ipOctets = ip.split('.');
+function increment(_ip) {
+  let ipOctets = _ip.split('.');
   for (let i = ipOctets.length - 1; i in ipOctets; i--) {
     ipOctets[i]++;
     if (ipOctets[i] > 255)
@@ -22,20 +22,21 @@ function increment(ip) {
   return ipOctets.join('.');
 }
 
-function pingEnumerated((pingArgs, ipStart, ipEnd, pingPromises) => {
+function pingEnumerated(_pingArgs, _ipRange) {
   // todo!: fix prone to overflow if ipEnd invalid
   // todo: ipEnd be inclusive
   // todo?: scan in series not parallel to avoid "fork bomb" slowdowns
-  for (let ip = ipStart; ip !== ipEnd; ip = increment(ip)) {
+  let promises = [];
+  for (let ip = _ipRange['start']; ip !== _ipRange['end']; ip = increment(ip)) {
     process.stdout.write(ip);
-    pingPromises.push(ping(pingArgs, ip));
+    promises.push(ping(_pingArgs, ip));
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
   };
   process.stdout.write("\n");
 
-  return promiseArray;
-});
+  return promises;
+};
 
 // todo!: spawn worker threads for every cpu core to scan tcp/udp ports of reachable hosts
 // todo: less implicit conditional for resolved only
@@ -43,17 +44,16 @@ function pingEnumerated((pingArgs, ipStart, ipEnd, pingPromises) => {
 // todo?: port scan traceroute hops
 // console.log(results) omits due to limited buffer size(?)
 const ports = [22, 23, 80, 443],
-  ipRange = {
-    ipStart: '100.87.0.1',
-    ipEnd: '100.87.1.0'
+  iprange = {
+    start: '100.87.0.1',
+    end: '100.87.1.0'
   },
-  pingArgs = ['ping', '-c1', '-w1'];
-let pingPromises = [];
-promises = pingEnumerated(pingArgs, ipRange['ipStart'], ipRange['ipEnd'], promises);
-(function(promiseArray) {
-  Promise.allSettled(promiseArray)
-    .then((promiseArray) => {
-      promiseArray.forEach((promise) => {
+  pingargs = ['ping', '-c1', '-w1'],
+  promises = pingEnumerated(pingargs, iprange);
+(function(_promises) {
+  Promise.allSettled(_promises)
+    .then((_promises) => {
+      _promises.forEach((promise) => {
         if (value = promise['value']) {
           console.log(value);
         }
